@@ -96,7 +96,7 @@ s_all_10m = aggregate(s_all, fact=10,fun='mean',na.rm=TRUE)
 
 indices_cytotype_10m = which(s_all_10m[["Aspen.Cover"]][]>0)
 # pick a sample of cells that do contain aspen
-#indices_cytotype = read.csv('indices_cytotype.csv')
+indices_cytotype = read.csv('indices_cytotype.csv')
 #indices_cytotype_sample = indices_cytotype$x
 #indices_cytotype_buffer_5m = read.csv('indices_cytotype_buffer_5m.csv')
 #indices_cytotype_buffer_5m_sample = indices_cytotype_buffer_5m$x
@@ -130,7 +130,7 @@ generate_df <- function(s_all_this, indices)
 df_all_10m = generate_df(s_all_10m, indices_cytotype_10m)
 #df_all_10m = df_all_10m %>% dplyr::select(-Cytotype.buffer.5m) %>% rename(Cytotype = Cytotype.nobuffer)
 
-#df_all = generate_df(s_all, indices_cytotype_sample)
+df_all = generate_df(s_all, indices_cytotype$x)
 #df_all = df_all %>% dplyr::select(-Cytotype.buffer.5m) %>% rename(Cytotype = Cytotype.nobuffer)
 #df_all_buffer_5m = generate_df(indices_cytotype_buffer_5m_sample)
 #df_all_buffer_5m = df_all_buffer_5m %>% dplyr::select(-Cytotype.nobuffer) %>% rename(Cytotype = Cytotype.buffer.5m)
@@ -374,6 +374,17 @@ rm(g_damage_final)
 
 
 # show ground based plots relative to remotely sensed data
+
+
+
+inset_A_x = 328091
+inset_A_y = 4309700
+inset_B_x = 322848
+inset_B_y = 4311324  
+delta_inset = 700
+df_A = data.frame(xmin=inset_A_x-delta_inset,xmax=inset_A_x+delta_inset,ymin=inset_A_y-delta_inset,ymax=inset_A_y+delta_inset,x=inset_A_x,y=inset_A_y,label='b')
+df_B = data.frame(xmin=inset_B_x-delta_inset,xmax=inset_B_x+delta_inset,ymin=inset_B_y-delta_inset,ymax=inset_B_y+delta_inset,x=inset_B_x,y=inset_B_y,label='c')
+
 g_map_cytotype_ground = ggplot(df_aspen_for_map,aes(x=x,y=y,fill=value)) + 
   geom_polygon(data=s_ws_df,aes(x=long,y=lat,group=group),color='gray',fill=NA) +
   geom_tile(aes(fill=ifelse(value>0.5,"diploid","triploid"))) +
@@ -383,10 +394,53 @@ g_map_cytotype_ground = ggplot(df_aspen_for_map,aes(x=x,y=y,fill=value)) +
   scale_fill_manual(values=c("blue","red"),name='Cytotype (predicted)',na.translate=FALSE) +
   annotation_scale(location = "bl", height = unit(0.1, "cm")) +
   geom_point(data=data_ground, aes(x=X.UTM,y=Y.UTM,color=tolower(Ploidy_level)),inherit.aes=FALSE,alpha=0.6,size=1) +
-  scale_color_manual(values=c("purple","orange"),name='Cytotype (ground truth)',na.translate=FALSE)
+  scale_color_manual(values=c("purple","orange"),name='Cytotype (ground truth)',na.translate=FALSE) +  
+  geom_rect(data=df_A,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),fill=NA,color='black',inherit.aes = FALSE) +
+  geom_text(data=df_A,aes(x=x,y=y,label=label),color='black',inherit.aes = FALSE) +
+  geom_rect(data=df_B,aes(xmin=xmin,xmax=xmax,ymin=ymin,ymax=ymax),fill=NA,color='black',inherit.aes = FALSE) +
+  geom_text(data=df_B,aes(x=x,y=y,label=label),color='black',inherit.aes = FALSE)
 
-ggsave(g_map_cytotype_ground, file='g_fig_groundtruth.pdf', width=10,height=10)
-ggsave(g_map_cytotype_ground, file='g_fig_groundtruth.png', width=9,height=9,dpi=600)
+r_cytotype_groundtruth_cropped_A = crop(r_cytotype_masked,extent(c(inset_A_x-delta_inset, inset_A_x+delta_inset,inset_A_y-delta_inset,inset_A_y+delta_inset)))
+df_cytotype_for_map_A = gplot_data(r_cytotype_groundtruth_cropped_A,maxpixels=5e6)
+data_ground_A = data_ground %>%
+  filter(X.UTM >= inset_A_x-delta_inset & X.UTM <= inset_A_x+delta_inset) %>%
+  filter(Y.UTM >= inset_A_y-delta_inset & Y.UTM <= inset_A_y+delta_inset)
+
+g_map_cytotype_ground_A = ggplot(df_cytotype_for_map_A,aes(x=x,y=y,fill=value)) + 
+  geom_tile(aes(fill=ifelse(value>0.5,"diploid","triploid"))) +
+  theme_bw() + theme(axis.ticks.x = element_blank(),axis.text.x = element_blank(),axis.ticks.y = element_blank(),axis.text.y = element_blank()) +
+  xlab("") + ylab("") +
+  coord_equal() +
+  scale_fill_manual(values=c("blue","red"),name='Cytotype (predicted)',na.translate=FALSE) +
+  annotation_scale(location = "bl", height = unit(0.1, "cm")) +
+  geom_point(data=data_ground_A, aes(x=X.UTM,y=Y.UTM,color=tolower(Ploidy_level)),inherit.aes=FALSE,alpha=0.6,size=1) +
+  scale_color_manual(values=c("purple","orange"),name='Cytotype (ground truth)',na.translate=FALSE) +
+  theme(legend.position = 'none')
+
+
+r_cytotype_groundtruth_cropped_B = crop(r_cytotype_masked,extent(c(inset_B_x-delta_inset, inset_B_x+delta_inset,inset_B_y-delta_inset,inset_B_y+delta_inset)))
+df_cytotype_for_map_B = gplot_data(r_cytotype_groundtruth_cropped_B,maxpixels=5e6)
+data_ground_B = data_ground %>%
+  filter(X.UTM >= inset_B_x-delta_inset & X.UTM <= inset_B_x+delta_inset) %>%
+  filter(Y.UTM >= inset_B_y-delta_inset & Y.UTM <= inset_B_y+delta_inset)
+
+g_map_cytotype_ground_B = ggplot(df_cytotype_for_map_B,aes(x=x,y=y,fill=value)) + 
+  geom_tile(aes(fill=ifelse(value>0.5,"diploid","triploid"))) +
+  theme_bw() + theme(axis.ticks.x = element_blank(),axis.text.x = element_blank(),axis.ticks.y = element_blank(),axis.text.y = element_blank()) +
+  xlab("") + ylab("") +
+  coord_equal() +
+  scale_fill_manual(values=c("blue","red"),name='Cytotype (predicted)',na.translate=FALSE) +
+  annotation_scale(location = "bl", height = unit(0.1, "cm")) +
+  geom_point(data=data_ground_B, aes(x=X.UTM,y=Y.UTM,color=tolower(Ploidy_level)),inherit.aes=FALSE,alpha=0.6,size=1) +
+  scale_color_manual(values=c("purple","orange"),name='Cytotype (ground truth)',na.translate=FALSE) +
+  theme(legend.position = 'none')
+
+
+g_map_cytotye_ground_all = ggarrange(g_map_cytotype_ground, ggarrange(g_map_cytotype_ground_A, g_map_cytotype_ground_B,nrow=2,ncol=1,labels=c('b','c')), 
+                                     nrow=1,ncol=2,widths = c(2,1),labels='a',common.legend = TRUE,legend='bottom')
+
+ggsave(g_map_cytotye_ground_all, file='g_fig_groundtruth.pdf', width=8,height=8)
+ggsave(g_map_cytotye_ground_all, file='g_fig_groundtruth.png', width=8,height=8,dpi=600)
 
 
 
@@ -395,32 +449,32 @@ ggsave(g_map_cytotype_ground, file='g_fig_groundtruth.png', width=9,height=9,dpi
 
 warning('redo at 10m?')
 # look at cytotype distributions across mortality classes
-xt.usfs = as.data.frame(xtabs(~Cytotype + Damage.USFS,data=df_all_10m)) %>% 
+xt.usfs = as.data.frame(xtabs(~Cytotype.fractionDiploid + Damage.USFS.fraction, data=df_all)) %>% 
   #filter(Damage==TRUE) %>%
-  group_by(Damage.USFS) %>%
+  group_by(Damage.USFS.fraction) %>%
   mutate(NormFreq = Freq/sum(Freq))
-xt.usfs.totals = xt.usfs %>% group_by(Damage.USFS) %>% summarize(NumPixels = sum(Freq))
+xt.usfs.totals = xt.usfs %>% group_by(Damage.USFS.fraction) %>% summarize(NumPixels = sum(Freq))
 # use 3m cutoff
-xt.lidar = as.data.frame(xtabs(~Cytotype + Damage.Lidar,data=df_all %>% mutate(Damage.Lidar=Damage.Lidar < -3))) %>% 
+xt.lidar = as.data.frame(xtabs(~Cytotype.fractionDiploid + Damage.Lidar.fraction,data=df_all)) %>% 
   #filter(Damage==TRUE) %>%
-  group_by(Damage.Lidar) %>%
+  group_by(Damage.Lidar.fraction) %>%
   mutate(NormFreq = Freq/sum(Freq))
-xt.lidar.totals = xt.lidar %>% group_by(Damage.Lidar) %>% summarize(NumPixels = sum(Freq))
+xt.lidar.totals = xt.lidar %>% group_by(Damage.Lidar.fraction) %>% summarize(NumPixels = sum(Freq))
 
-g_damage_usfs_by_cytotype = ggplot(xt.usfs,aes(x=(Damage.USFS==1),y=NormFreq,fill=Cytotype)) + 
+g_damage_usfs_by_cytotype = ggplot(xt.usfs,aes(x=(Damage.USFS.fraction==1),y=NormFreq,fill=Cytotype.fractionDiploid)) + 
   geom_bar(stat='identity',position='stack') +
-  scale_fill_manual(values=c("blue","red")) +
+  scale_fill_manual(values=c("blue","red"),name='Cytotype',breaks=0:1,labels=c('Diploid','Triploid')) +
   ylab("Fraction of area with damage") +
   xlab("Aerially-surveyed damage (2000-2018)") +
-  geom_text(data=xt.usfs.totals, aes(label=NumPixels,x=(Damage.USFS==1),y=0.05),inherit.aes=FALSE) +
+  geom_text(data=xt.usfs.totals, aes(label=NumPixels,x=(Damage.USFS.fraction==1),y=0.05),inherit.aes=FALSE) +
   theme_bw()# +
 #theme(legend.position = 'none')
-g_damage_lidar_by_cytotype = ggplot(xt.lidar,aes(x=Damage.Lidar,y=NormFreq,fill=Cytotype)) + 
+g_damage_lidar_by_cytotype = ggplot(xt.lidar,aes(x=Damage.Lidar.fraction,y=NormFreq,fill=Cytotype.fractionDiploid)) + 
   geom_bar(stat='identity',position='stack') +
-  scale_fill_manual(values=c("blue","red")) +
+  scale_fill_manual(values=c("blue","red"),name='Cytotype',breaks=0:1,labels=c('Diploid','Triploid')) +
   ylab("Fraction of area with damage") +
   xlab("Lidar-detected damage (2015-2019)") +
-  geom_text(data=xt.lidar.totals, aes(label=NumPixels,x=Damage.Lidar,y=0.05),inherit.aes=FALSE) +
+  geom_text(data=xt.lidar.totals, aes(label=NumPixels,x=Damage.Lidar.fraction,y=0.05),inherit.aes=FALSE) +
   theme_bw()
 
 g_inset_xt = ggarrange(g_damage_usfs_by_cytotype, g_damage_lidar_by_cytotype,
@@ -428,7 +482,9 @@ g_inset_xt = ggarrange(g_damage_usfs_by_cytotype, g_damage_lidar_by_cytotype,
 ggsave(g_inset_xt,file='g_inset_xt.pdf',width=8,height=5)
 ggsave(g_inset_xt,file='g_inset_xt.png',width=8,height=5)
 
-
+# do chi square tests
+chisq.test(xtabs(~Cytotype.fractionDiploid + Damage.USFS.fraction, data=df_all))
+chisq.test(xtabs(~Cytotype.fractionDiploid + Damage.Lidar.fraction, data=df_all))
 # get a smaller subset for effective model fitting
 #set.seed(1)
 #df_all_ss = df_all %>%
