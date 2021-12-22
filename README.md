@@ -1,5 +1,5 @@
 # README
-Last updated April 27 2021.
+Last updated 22 December 2021.
 
 # CONTACT
 Contact Benjamin Blonder (benjamin.blonder@berkeley.edu) with any questions.
@@ -13,6 +13,7 @@ All the analyses in the study can be replicated by running each of the companion
 + analyze neon - 3 rf.R
 + analyze neon - 4 spectral separation confusion.R
 + analyze neon - 5 si damage by year.R
++ analyze neon - 6 aerial vs ground damage.R
 
 The scripts require access to numerous datafiles that are available either in repositories we have made available publicly, or which are available on other public websites. The files are not included with this code due to the multi-GB size such an archive would require.
 
