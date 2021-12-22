@@ -118,10 +118,10 @@ generate_df <- function(s_all_this, indices)
     dplyr::select(-Cytotype.buffer.5m)
   
   # %>%
-    #mutate(Cytotype.nobuffer=factor(ifelse(Cytotype.nobuffer > 0.5,"diploid","triploid"))) %>%
-    #mutate(Cytotype.buffer.5m=factor(ifelse(Cytotype.buffer.5m > 0.5,"diploid","triploid"))) %>%
-    #mutate(Damage.Year = Damage.USFS) %>%
-    #mutate(Damage.USFS = as.numeric(!is.na(Damage.USFS)))
+  #mutate(Cytotype.nobuffer=factor(ifelse(Cytotype.nobuffer > 0.5,"diploid","triploid"))) %>%
+  #mutate(Cytotype.buffer.5m=factor(ifelse(Cytotype.buffer.5m > 0.5,"diploid","triploid"))) %>%
+  #mutate(Damage.Year = Damage.USFS) %>%
+  #mutate(Damage.USFS = as.numeric(!is.na(Damage.USFS)))
   
   return(df)
 }
@@ -258,6 +258,7 @@ g_map_cytotype_all = ggarrange(NAmap, cowplot::ggdraw(), g_map_cytotype, g_map_c
 
 #ggsave(g_map_cytotype_all, file='g_map_cytotype.pdf',width=12,height=12)
 ggsave(g_map_cytotype_all, file='g_map_cytotype.png',width=6,height=7)
+ggsave(g_map_cytotype_all, file='g_map_cytotype.pdf',width=6,height=7)
 rm(g_map_cytotype_all)
 
 
@@ -446,8 +447,6 @@ ggsave(g_map_cytotye_ground_all, file='g_fig_groundtruth.png', width=8,height=8,
 
 
 
-
-warning('redo at 10m?')
 # look at cytotype distributions across mortality classes
 xt.usfs = as.data.frame(xtabs(~Cytotype.fractionDiploid + Damage.USFS.fraction, data=df_all)) %>% 
   #filter(Damage==TRUE) %>%
@@ -465,7 +464,7 @@ g_damage_usfs_by_cytotype = ggplot(xt.usfs,aes(x=(Damage.USFS.fraction==1),y=Nor
   geom_bar(stat='identity',position='stack') +
   scale_fill_manual(values=c("blue","red"),name='Cytotype',breaks=0:1,labels=c('Diploid','Triploid')) +
   ylab("Fraction of area with damage") +
-  xlab("Aerially-surveyed damage (2000-2018)") +
+  xlab("USFS canopy damage (2000-2018)") +
   geom_text(data=xt.usfs.totals, aes(label=NumPixels,x=(Damage.USFS.fraction==1),y=0.05),inherit.aes=FALSE) +
   theme_bw()# +
 #theme(legend.position = 'none')
@@ -473,31 +472,18 @@ g_damage_lidar_by_cytotype = ggplot(xt.lidar,aes(x=Damage.Lidar.fraction,y=NormF
   geom_bar(stat='identity',position='stack') +
   scale_fill_manual(values=c("blue","red"),name='Cytotype',breaks=0:1,labels=c('Diploid','Triploid')) +
   ylab("Fraction of area with damage") +
-  xlab("Lidar-detected damage (2015-2019)") +
+  xlab("Lidar canopy damage (2015-2019)") +
   geom_text(data=xt.lidar.totals, aes(label=NumPixels,x=Damage.Lidar.fraction,y=0.05),inherit.aes=FALSE) +
   theme_bw()
 
 g_inset_xt = ggarrange(g_damage_usfs_by_cytotype, g_damage_lidar_by_cytotype,
-                        nrow=1,ncol=2,common.legend = TRUE, legend='bottom',labels=c('(a)','(b)'))
+                       nrow=1,ncol=2,common.legend = TRUE, legend='bottom',labels=c('(a)','(b)'))
 ggsave(g_inset_xt,file='g_inset_xt.pdf',width=8,height=5)
 ggsave(g_inset_xt,file='g_inset_xt.png',width=8,height=5)
 
 # do chi square tests
 chisq.test(xtabs(~Cytotype.fractionDiploid + Damage.USFS.fraction, data=df_all))
 chisq.test(xtabs(~Cytotype.fractionDiploid + Damage.Lidar.fraction, data=df_all))
-# get a smaller subset for effective model fitting
-#set.seed(1)
-#df_all_ss = df_all %>%
-#  filter(Elevation >= quantile(Elevation,0.01,na.rm=T) & 
-#           Elevation <= quantile(Elevation,0.99,na.rm=T) & 
-#           Slope >= quantile(Slope,0.01,na.rm=T) & 
-#           Slope <= quantile(Slope,0.99,na.rm=T) & 
-#           Cos.aspect >= quantile(Cos.aspect,0.01,na.rm=T) & 
-#           Cos.aspect <= quantile(Cos.aspect,0.99,na.rm=T) & 
-#           x >= quantile(x,0.01,na.rm=T) & 
-#           x <= quantile(x,0.99,na.rm=T) &
-#           y >= quantile(y,0.01,na.rm=T) & 
-#           y <= quantile(y,0.99,na.rm=T))
 
 
 # clear some memory
@@ -505,18 +491,6 @@ rm(g_damage)
 rm(g_lidar)
 rm(g_map_cytotype_all)
 rm(g_map_cytotype_ground)
-
-#df_all_buffer_5m_ss = df_all_buffer_5m %>% 
-#  dplyr::select(-Damage.Year) %>% 
-#  na.omit
-
-#m_damage = bam(factor(Damage.USFS)~Cytotype + s(Elevation,by=Cytotype) + s(Slope,by=Cytotype) + s(Cos.aspect,by=Cytotype) + s(x,y),
-#               family='binomial',
-#               data=df_all_ss,
-#               control = gam.control(trace = TRUE),
-#               discrete=TRUE)
-
-#https://converged.yt/talks/creemcrackers-splines/talk.pdf
 
 
 
@@ -711,4 +685,3 @@ writeRaster(r_elev, file='gee_topo_elevation.tif', options="COMPRESS=LZW", overw
 writeRaster(r_cytotype_masked, file='gee_cytotype.tif', options="COMPRESS=LZW", overwrite=TRUE, datatype='INT1S')
 writeRaster(r_damage_usfs_masked, file='gee_damage_usfs.tif', options="COMPRESS=LZW", overwrite=TRUE, datatype='INT1S')
 writeRaster(r_damage_lidar_masked, file='gee_damage_lidar.tif', options="COMPRESS=LZW", overwrite=TRUE, datatype='INT1S')
-            

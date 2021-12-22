@@ -26,10 +26,6 @@ df_all_gridded = df_all_10m %>%
   mutate(Damage.USFS.fraction.clipped = ifelse(is.na(Damage.Lidar.fraction), NA, Damage.USFS.fraction))
 
 
-  #filter((Elevation > quantile(Elevation,q/2, na.rm=T)) & (Elevation < quantile(Elevation,1-q/2, na.rm=T)) &
-  #  (Slope > quantile(Slope,q/2, na.rm=T)) & (Slope < quantile(Slope,1-q/2, na.rm=T)) &
-  #  (Cos.aspect > quantile(Cos.aspect,q/2, na.rm=T)) & (Cos.aspect < quantile(Cos.aspect,1-q/2, na.rm=T)) &
-  #  (Elevation > quantile(Elevation,q/2, na.rm=T)) & (Elevation < quantile(Elevation,1-q/2, na.rm=T)))
 
 
 split_train_test <- function(df, fraction=0.8, xvar, yvar)
@@ -201,7 +197,6 @@ try_models <- function(yvar, categorical=TRUE, iter=1:5, np=NULL, xvartype)
 
 
 # run models
-#np_run = c(1e3, 1e4, 1e5)
 models_results_cytotype = try_models(yvar=c("Cytotype.fractionDiploid"),xvartype=xvars_all[ !grepl("cyto",xvars_all) & !grepl("trait",xvars_all) ],np=NULL,iter = 1:5, categorical=FALSE)
 save(models_results_cytotype, file='models_results_cytotype.Rdata')
 
@@ -408,13 +403,17 @@ save(pdp_trait_n,file='pdp_trait_n.Rdata')
 
 
 ## or alternatively load precomputed results
-#load('pdp_damage_usfs.Rdata')
-#load('pdp_damage_lidar.Rdata')
-#load('pdp_damage_usfs_clipped.Rdata')
-#load('pdp_cytotype.Rdata')
-#load('pdp_trait_cwc.Rdata')
-#load('pdp_trait_d13c.Rdata')
-#load('pdp_trait_n.Rdata')
+load_precomputed = TRUE
+if (load_precomputed==TRUE)
+{
+  load('pdp_damage_usfs.Rdata')
+  load('pdp_damage_lidar.Rdata')
+  load('pdp_damage_usfs_clipped.Rdata')
+  load('pdp_cytotype.Rdata')
+  load('pdp_trait_cwc.Rdata')
+  load('pdp_trait_d13c.Rdata')
+  load('pdp_trait_n.Rdata')
+}
 
 
 
@@ -428,7 +427,7 @@ g_pdp_damage_usfs.mean = ggplot(pdp_summary_damage_usfs, aes(x=Elevation,y=Trait
   facet_wrap(~Cytotype.fractionDiploid) +
   scale_fill_viridis(name=expression(mu),option='magma') +
   theme_bw() +
-  ggtitle('Damage fraction - USFS') +
+  ggtitle('Canopy damage fraction - USFS') +
   xlab('Elevation (m)') + ylab(expression(paste("Canopy water content (mL m"^{-2},")")))
 
 g_pdp_damage_usfs.cv = ggplot(pdp_summary_damage_usfs, aes(x=Elevation,y=Trait.CWC,fill=yhat.sd/yhat)) + 
@@ -453,7 +452,7 @@ g_pdp_damage_lidar.mean = ggplot(pdp_summary_damage_lidar, aes(x=Elevation,y=Tra
   facet_wrap(~Cytotype.fractionDiploid) +
   scale_fill_viridis(name=expression(mu),option='magma') +
   theme_bw() +
-  ggtitle('Damage fraction - LiDAR') +
+  ggtitle('Canopy damage fraction - LiDAR') +
   xlab('Elevation (m)') + ylab(expression(paste("Canopy water content (mL m"^{-2},")")))
 
 g_pdp_damage_lidar.cv = ggplot(pdp_summary_damage_lidar, aes(x=Elevation,y=Trait.CWC,fill=yhat.sd/yhat)) + 
@@ -465,9 +464,12 @@ g_pdp_damage_lidar.cv = ggplot(pdp_summary_damage_lidar, aes(x=Elevation,y=Trait
 
 g_pdp_damage_lidar = ggarrange(g_pdp_damage_lidar.mean, g_pdp_damage_lidar.cv,
                                nrow=1,ncol=2,labels=c('(c)','(d)'), align='hv')
-#ggsave(g_pdp_damage_lidar,file='g_pdp_damage_lidar.png',width=7,height=7)
-ggsave(ggarrange(g_pdp_damage_usfs, g_pdp_damage_lidar, 
-                 nrow=2,ncol=1), file='g_pdp_damage.png',width=8,height=5)
+
+g_pdp_damage_FINAL = ggarrange(g_pdp_damage_usfs, g_pdp_damage_lidar, 
+          nrow=2,ncol=1)
+ggsave(g_pdp_damage_FINAL, file='g_pdp_damage.png',width=8,height=5)
+ggsave(g_pdp_damage_FINAL, file='g_pdp_damage.pdf',width=8,height=5)
+
 
 # DAMAGE USFS clipped
 pdp_summary_damage_usfs_clipped = summarize_pdp(pdp_damage_usfs_clipped)
@@ -477,7 +479,7 @@ g_pdp_damage_usfs_clipped.mean = ggplot(pdp_summary_damage_usfs_clipped, aes(x=E
   facet_wrap(~Cytotype.fractionDiploid) +
   scale_fill_viridis(name=expression(mu),option='magma') +
   theme_bw() +
-  ggtitle('Damage fraction - USFS (clipped)') +
+  ggtitle('Canopy damage fraction - USFS (clipped)') +
   xlab('Elevation (m)') + ylab(expression(paste("Canopy water content (mL m"^{-2},")")))
 
 g_pdp_damage_usfs_clipped.cv = ggplot(pdp_summary_damage_usfs_clipped, aes(x=Elevation,y=Trait.CWC,fill=yhat.sd/yhat)) + 
@@ -512,6 +514,7 @@ g_pdp_cytotype.cv = ggplot(pdp_summary_cytotype, aes(x=Elevation,y=Cos.aspect,fi
 g_pdp_cytotype = ggarrange(g_pdp_cytotype.mean, g_pdp_cytotype.cv,
           nrow=2,ncol=1,labels=c('(a)','(b)'), align='hv')
 ggsave(g_pdp_cytotype,file='g_pdp_cytotype.png',width=4.5,height=7)
+ggsave(g_pdp_cytotype,file='g_pdp_cytotype.pdf',width=4.5,height=7)
 
 
 
@@ -586,6 +589,8 @@ g_pdp_trait_n = ggarrange(g_pdp_trait_n.mean, g_pdp_trait_n.cv,
 # TRAITS ALL
 ggsave(ggarrange(g_pdp_trait_cwc, g_pdp_trait_d13c, g_pdp_trait_n,nrow=3,ncol=1),
        file='g_pdp_trait.png',width=9,height=7)
+ggsave(ggarrange(g_pdp_trait_cwc, g_pdp_trait_d13c, g_pdp_trait_n,nrow=3,ncol=1),
+       file='g_pdp_trait.pdf',width=9,height=7)
 
 
 
@@ -608,7 +613,14 @@ ggsave(ggarrange(g_pdp_trait_cwc, g_pdp_trait_d13c, g_pdp_trait_n,nrow=3,ncol=1)
 
 
 ## PLOT PERFORMANCE OF MODELS
-
+if (load_precomputed==TRUE)
+{
+  load('models_results_cytotype.Rdata')
+  load('models_results_traits.Rdata')
+  load('models_results_damage_usfs.Rdata')
+  load('models_results_damage_lidar.Rdata')
+  load('models_results_damage_usfs_clipped.Rdata')
+}
 
 assign_levels_xvars <- function(xv)
 {
@@ -645,30 +657,25 @@ ggsave(g_trait_performance, file='g_trait_performance.png',width=7,height=4)
 
 g_damage_usfs_performance = ggplot(models_results_damage_usfs$result %>% mutate(xvartype=assign_levels_xvars(xvartype)),
                                                     aes(x=xvartype,y=r2)) + 
-  facet_wrap(~yvar) +
+  facet_wrap(~yvar,labeller=labeller(yvar=c(Damage.USFS.fraction="Canopy damage fraction (USFS)"))) +
   geom_violin(draw_quantiles=0.5) +
   theme_bw() +
   xlab('Predictor variables') +
   ylim(0,0.5) + ylab(expression(paste("R"^2))) + 
   theme(axis.text.x = element_text(angle = 45,hjust=1))
-
-#ggsave(g_damage_usfs_performance, file='g_damage_usfs_performance.png',width=7,height=4)
 
 g_damage_lidar_performance = ggplot(models_results_damage_lidar$result %>% mutate(xvartype=assign_levels_xvars(xvartype)),
                                    aes(x=xvartype,y=r2)) + 
-  facet_wrap(~yvar) +
+  facet_wrap(~yvar,labeller=labeller(yvar=c(Damage.Lidar.fraction="Canopy damage fraction (Lidar)"))) +
   geom_violin(draw_quantiles=0.5) +
   theme_bw() +
   xlab('Predictor variables') +
   ylim(0,0.5) + ylab(expression(paste("R"^2))) + 
   theme(axis.text.x = element_text(angle = 45,hjust=1))
 
-#ggsave(g_damage_lidar_performance, file='g_damage_lidar_performance.png',width=7,height=4)
-
-
 g_damage_usfs_clipped_performance = ggplot(models_results_damage_usfs_clipped$result %>% mutate(xvartype=assign_levels_xvars(xvartype)),
                                     aes(x=xvartype,y=r2)) + 
-  facet_wrap(~yvar) +
+  facet_wrap(~yvar,labeller=labeller(yvar=c(Damage.USFS.fraction.clipped="Canopy damage fraction (USFS clipped)"))) +
   geom_violin(draw_quantiles=0.5) +
   theme_bw() +
   xlab('Predictor variables') +
@@ -682,7 +689,6 @@ ggsave(ggarrange(g_damage_usfs_performance, g_damage_lidar_performance, g_damage
                  common.legend = TRUE,
                  align='hv'),
   file='g_damage_performance.png',width=7,height=8)
-#ggsave(g_damage_usfs_clipped_performance, file='g_damage_usfs_clipped_performance.png',width=7,height=4)
 
 
 
