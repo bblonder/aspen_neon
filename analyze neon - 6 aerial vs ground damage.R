@@ -25,7 +25,7 @@ data_damage_melted = melt(data_damage,
 
 g_final_counts = ggplot(data_damage_melted, aes(x=Count.adult.dead/11,fill=factor(value),color=factor(value),group=factor(value))) + 
   geom_density() +
-  facet_wrap(~variable,labeller=as_labeller(c(damage_usfs='USFS damage (2015-2018)',damage_lidar='Lidar damage (2015-2018)'))) + 
+  facet_wrap(~variable,labeller=as_labeller(c(damage_usfs='USFS damage (2015-2018)',damage_lidar='Lidar damage (2015-2019)'))) + 
   xlab('Fraction dead trees (ground-based census)') +
   ylab('Probability density') +
   theme_bw() +
